@@ -1,0 +1,20 @@
+PCA9633				KEYWORD1
+SI7050				KEYWORD1
+VEML6030			KEYWORD1
+
+init				KEYWORD2
+rgbwControl			KEYWORD2
+_I2CWrite			KEYWORD2
+_I2CRead			KEYWORD2
+onBoardMode			KEYWORD2
+outputMode			KEYWORD2
+
+startTempMeasure	KEYWORD2
+getTempMeasureC		KEYWORD2
+getTempMeasureF		KEYWORD2
+
+defaultConfig		KEYWORD2
+getALS				KEYWORD2
+getWhite			KEYWORD2
+writeCommand		KEYWORD2
+readData			KEYWORD2
