@@ -63,7 +63,7 @@ class BGX13
   	//get - Get the value of a variable
   	void getVariable(char *variable, char *buffer, int length);
   	//gfu - Select GPIO Function
-  	void selectGPIOFunction(int gpioNumber, char *function);
+  	void selectGPIOFunction(int gpioNumber, const char *function);
   	//gge - Get GPIO value
   	int getGPIOValue(int number);
   	//gse - Set Gpio Value
@@ -75,7 +75,7 @@ class BGX13
   	//scan
   	void scan(int timeScan);
   	//set
-    void setVariable(char *variable, char *value);
+    void setVariable(const char *variable, const char *value);
   	//sleep
     void sleepMode(void);
   	//str
@@ -98,7 +98,7 @@ class BGX13
     ~BGX13(void);
 
   private:
-  	int _state;
+  	uint8_t _state;
     Stream *_bgxSerial;
     char _uart_tx_buffer[UART_BUFFER_SIZE];
     char _uart_rx_buffer[UART_BUFFER_SIZE];
@@ -108,7 +108,5 @@ class BGX13
     void serialBegin(long baud);
     bool _swSerial = false;
 };
-
-
 
 #endif //ifndef BGX_h 

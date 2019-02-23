@@ -202,7 +202,7 @@ void SI7050::startTempMeasure(void){
 *	degrees celcius
 ***********************************************/ 
 float SI7050::getTempMeasureC(void){
-	unsigned int data[2];
+	unsigned int data[2] = {};
     Wire.requestFrom(_adr, 2);
     // Read 2 bytes of data
     // temp msb, temp lsb
