@@ -43,8 +43,8 @@ struct RgbaiColorCommand {
 
 int getSerialInput(unsigned char *buffer, int size, int timeout);
 ErrorCode handleCommand(unsigned char *buffer, int size, bool bt);
-void readSensors(float *temperature, uint16_t *ambient_light);
-void updateSwell(uint8_t swell_index);
+void readSensors(float *temperature, float *ambient_light);
+void updateSwell(uint32_t swell_index);
 LedColor normalizeColor(LedColor color);
 void setLightColor(LedColor color);
 void convertBufferAtoI(unsigned char *);
@@ -69,7 +69,9 @@ char serial_input_buffer[SERIAL_INPUT_BUFFER_SIZE] = {0};
 char bluetooth_input_buffer[UART_BUFFER_SIZE] = {0};
 bool host_connected = false;
 uint8_t swell[] = {0, 0, 0, 0, 0, 1, 5, 10, 20, 50, 90, 150, 255, 150, 90, 50, 20, 10, 5, 1, 0, 0, 0, 0}; //Used to test lights with a "chase effect" - Also used for the init section
-uint8_t swell_count = 0; //Index to use for chase math
+#define SWELL_COUNT 24
+#define SWELL_OFFSET (SWELL_COUNT/4)
+uint32_t swell_count = 0; //Index to use for chase math
 
 
 
@@ -86,7 +88,11 @@ void setup() {
 
   dimmer = new PCA9633(0x60);
   dimmer->init();
-  dimmer->onBoardMode();
+  if(OUTPUT_MODE){
+    dimmer->outputMode();
+  } else{
+    dimmer->onBoardMode();
+  }
   Serial.println("Dimmer Ready");
 
   lux = new VEML6030(0x10);
@@ -105,6 +111,9 @@ void loop() {
   ErrorCode status = SUCCESS;
   int num_bytes_received = getSerialInput(serial_input_buffer, SERIAL_INPUT_BUFFER_SIZE, 100);
   int bt_bytes_recieved = bgx.getBGXBuffer(&bluetooth_input_buffer[0]);
+  if(bt_bytes_recieved){
+    Serial.println(bluetooth_input_buffer);
+  }
   if ( (num_bytes_received > 0 || bt_bytes_recieved > 0 ) && !host_connected ) { // Host is now connected
     host_connected = true;
   }
@@ -174,7 +183,7 @@ ErrorCode handleCommand( char *buffer, int size, bool bt) {
       if (size >= LIGHT_CHANGE_COMMAND_LENGTH) {
         convertBufferAtoI(buffer); //Needed if controlling over serial like interface
         RgbaiColorCommand color_command = *((RgbaiColorCommand *)buffer);
-        if (color_command.arduino_id == ARD_ID) {
+        if (color_command.arduino_id == ARD_ID || 1) {
           if (color_command.checksum == getChecksum(buffer, size - 1) || true) {
             setLightColor(color_command.color);
             snprintf(print_buff, PRINT_BUFFER_SIZE, "Lights Set R: %d G: %d B: %d W: %d", color_command.color.red, color_command.color.green, color_command.color.blue, color_command.color.white);
@@ -191,7 +200,7 @@ ErrorCode handleCommand( char *buffer, int size, bool bt) {
           dimmer->rgbwControl(0, 0, 0, 0);
           snprintf(print_buff, PRINT_BUFFER_SIZE, "LIGHTS OFF");
         } else {
-          status = BAD_COMMAND_LENGTH;
+          host_connected = false; //Send L1 to start lioght show
         }
       }
       if (status) {
@@ -214,10 +223,10 @@ ErrorCode handleCommand( char *buffer, int size, bool bt) {
     // Get Lux
     case 'X':
       if (size >= GET_LUX_COMMAND_LENGTH) {
-        uint16_t lux;
+        float lux;
         readSensors(NULL, &lux);
         //Serial.println(lux);
-        snprintf(print_buff, PRINT_BUFFER_SIZE, "Lux Reading: %d", lux);
+        snprintf(print_buff, PRINT_BUFFER_SIZE, "Lux Reading: %d", int(lux));
       } else {
         status = BAD_COMMAND_LENGTH;
       }
@@ -227,9 +236,9 @@ ErrorCode handleCommand( char *buffer, int size, bool bt) {
     case 'A':
       if (size >= GET_ALL_SENSORS_COMMAND_LENGTH) {
         float temperature;
-        uint16_t lux;
+        float lux;
         readSensors(&temperature, &lux);
-        snprintf(print_buff, PRINT_BUFFER_SIZE, "Temperature: %d.%02d || Lux Reading: %d", int(temperature), int(temperature * 100) % 100, int(lux) );
+        snprintf(print_buff, PRINT_BUFFER_SIZE, "Temperature: %d.%02d || Lux Reading: %d", int(temperature), int(temperature * 100) % 100, int(lux));
         //Serial.println(temperature);
         //Serial.println(lux);
       } else {
@@ -261,7 +270,7 @@ ErrorCode handleCommand( char *buffer, int size, bool bt) {
   return status;
 }
 
-void readSensors(float *temperature, uint16_t *ambient_light) {
+void readSensors(float *temperature, float *ambient_light) {
   if (temperature && temp) {
     temp->startTempMeasure();
     delay(100);
@@ -269,16 +278,15 @@ void readSensors(float *temperature, uint16_t *ambient_light) {
   }
 
   if (ambient_light && lux) {
-    Serial.println(lux->getWhite());
     *ambient_light = lux->getWhite();
   }
 }
 
-void updateSwell(uint8_t swell_index) {
-  dimmer->rgbwControl(swell[(swell_index + 6)  % 13],
-                      swell[(swell_index + 0)  % 13],
-                      swell[(swell_index + 12) % 13],
-                      swell[(swell_index + 18) % 13]);
+void updateSwell(uint32_t swell_index) {
+  dimmer->rgbwControl(swell[(swell_index + (SWELL_OFFSET*1))  % SWELL_COUNT],
+                      swell[(swell_index + (SWELL_OFFSET*0))  % SWELL_COUNT],
+                      swell[(swell_index + (SWELL_OFFSET*2)) % SWELL_COUNT],
+                      swell[(swell_index + (SWELL_OFFSET*3)) % SWELL_COUNT]);
 }
 
 
@@ -289,12 +297,12 @@ void setLightColor(LedColor color) {
 
 void idleActions(void) {
   temp->startTempMeasure();
-  uint16_t ambient = lux->getWhite();
+  float ambient = lux->getWhite();
   delay(100);
   float ctemp = temp->getTempMeasureC();
   snprintf(print_buffer, 120, "Temp (Celcius) | Light (Lumens) | Light Value (R G B W/255)"
            "\r\n   %3d.%02d      |     %5d      |   %3d %3d %3d %3d   \r\n",
-           int(ctemp), int(ctemp * 100) % 100, (ambient), swell[(swell_count + 6)  % 13] / 2,
+           int(ctemp), int(ctemp * 100) % 100, int(ambient), swell[(swell_count + 6)  % 13] / 2,
            swell[(swell_count + 0)  % 13],
            swell[(swell_count + 12) % 13],
            swell[(swell_count + 18) % 13] / 4);
