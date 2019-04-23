@@ -16,7 +16,8 @@ See License.txt for more details.
 #ifndef BGXDefines_h
 #define BGXDefines_h
 
-
+// Unused variable filter to prevent warnings
+#define UNUSED(p) ((p)=(p))
 
 #define BUS_MODE_PIN 6 //Default Pin for BGX13 Arduino Shield 
 //This will change the pin configuration for arduino only
@@ -51,10 +52,9 @@ See License.txt for more details.
 #define GET_LAST_USER_FUNC_STATUS	"ulast"
 #define WAKE						"wake"
 
-
-static const char stream[] = "STREAM_MODE";
-static const char command[] = "COMMAND_MODE";
-static const char success[] = "Success";
+static const char stream[] PROGMEM = "STREAM_MODE";
+static const char command[] PROGMEM = "COMMAND_MODE";
+static const char success[] PROGMEM = "Success";
 
 enum BGX_states{
 	RESTART,
@@ -74,14 +74,15 @@ enum BGX_input_direction {
 	INPUT_DIRECTION_INTERRUPT_PULLDOWN
 };
 
-static const char * inDirections[] = { 
-    "in", //0
-    "ipd", //1
-    "ipu", //2
-    "inw", //3
-    "ipuw", //4
-    "ipdw" //5
-};
+// Moved to only used scope in BGX13::gpioSetIn
+// static const char * inDirections[] = { 
+//     "in",   //0
+//     "ipd",  //1
+//     "ipu",  //2
+//     "inw",  //3
+//     "ipuw", //4
+//     "ipdw"  //5
+// };
 
 enum BGX_output_direction {
 	OUTPUT_DIRECTION_LOW = 0,
@@ -89,23 +90,24 @@ enum BGX_output_direction {
 	OUTPUT_DIRECTION_HIGH_Z
 };
 
-static const char * outDirections[] = {
-    "olo", //0
-    "ohi", //1
-    "hiz"  //2
-};
+// Moved to only used scope in BGX13::gpioSetOut
+// static const char * outDirections[] = {
+//     "olo", //0
+//     "ohi", //1
+//     "hiz"  //2
+// };
 
-static const char * pushPullModes[] = {
-    "pp", //0
-    "od", //1
-    "os"  //2
-};
+// Moved to only used scope in BGX13::gpioSetOut
+// static const char * pushPullModes[] = {
+//     "pp", //0
+//     "od", //1
+//     "os"  //2
+// };
 
-static const char * driveStrengths[] = {
-    "drvst", //0
-    "drvwk" //1
-};
-
-
+// Moved to only used scope in BGX13::gpioSetOut
+// static const char * driveStrengths[] = {
+//     "drvst", //0
+//     "drvwk"  //1
+// };
 
 #endif
