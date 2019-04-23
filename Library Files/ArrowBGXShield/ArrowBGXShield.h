@@ -26,13 +26,11 @@ See License.txt for more details.
 #include "Arduino.h"
 #include "ArrowBGXShieldDefines.h"
 
-
 #if defined(ARDUINO_AVR_UNO)
   #include "SoftwareSerial.h"
 #else
   #define TWCR 0
 #endif
-
 
 class SI7050
 {
@@ -44,7 +42,6 @@ class SI7050
   private:
     int _adr;
 };
-
 
 class PCA9633
 {
@@ -60,7 +57,6 @@ class PCA9633
     void _I2CWrite(uint8_t commmand, uint8_t data);
     uint8_t _I2CRead(uint8_t command);
 };
-
 
 class VEML6030
 {

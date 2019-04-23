@@ -65,7 +65,6 @@ void BGX13::serialBegin(long baud) {
 
 void BGX13::serialConnect(long baud){
 
-
   serialBegin(baud);
   delay(5);
   //_bgxSerial->println("clrb");
@@ -95,7 +94,7 @@ void BGX13::waitForStreamMode(void) {
   // 
   int char_iter;
   int matchCount = 0;
-  for (char_iter = 0; (char_iter < _uart_rx_write_ptr) && (char_iter < strlen(stream)); char_iter++) {
+  for (char_iter = 0; (char_iter < _uart_rx_write_ptr) && (char_iter < (int)strlen(stream)); char_iter++) {
     if (_uart_rx_buffer[char_iter] == stream[char_iter]) {
       matchCount++;
     }
@@ -111,7 +110,7 @@ void BGX13::waitForStreamMode(void) {
 }
 
 int BGX13::BGXRead(void){
-  int byte_counter;
+  // int byte_counter;
   delay(READ_DELAY);
   int bytes_available = _bgxSerial->available();
   
@@ -126,7 +125,7 @@ int BGX13::BGXRead(void){
     //delay(10);
   }
 
-  _uart_rx_buffer[_uart_rx_write_ptr] = NULL;
+  _uart_rx_buffer[_uart_rx_write_ptr] = '\0';
 
   return bytes_available;
 }
@@ -149,8 +148,6 @@ int BGX13::getBGXBuffer(char* data){
   //gets and pushes _uart_rx_buffer to passed string
 }
 
-
-
 void BGX13::sendCommand(int readTime = 0) {
   SET_COMMAND_MODE(); //Sets COMMAND mode
   BGXRead();
@@ -162,10 +159,9 @@ void BGX13::sendCommand(int readTime = 0) {
   do
   {
     BGXRead();
-  }while ((millis() - start) < readTime);
+  }while ((millis() - start) < (unsigned long)readTime);
   //BGXRead(); //Eat the output
 
-  
   SET_STREAM_MODE(); //Sets stream mode
 }
 
@@ -210,7 +206,7 @@ void BGX13::factoryReset(void) {
   _uart_rx_write_ptr = 0;
   _bgxSerial->println(GET_BT_ADDR);
   BGXRead();
-  _uart_rx_buffer[ADDRESS_END_INDEX] = NULL;
+  _uart_rx_buffer[ADDRESS_END_INDEX] = '\0';
   snprintf(_uart_tx_buffer, UART_BUFFER_SIZE, FACTORY_RESET "%s", &_uart_rx_buffer[ADDRESS_INDEX]);
   _bgxSerial->println(_uart_tx_buffer);
   BGXRead();
@@ -218,7 +214,7 @@ void BGX13::factoryReset(void) {
 }
 
 /* Directions are as follows:
-   "in", //0
+    "in", //0
     "ipd", //1
     "ipu", //2
     "inw", //3
@@ -227,6 +223,15 @@ void BGX13::factoryReset(void) {
 */
 //TODO(andrew): Test this since it doesn't use std::String anymore
 void BGX13::gpioSetIn(int number, BGX_input_direction direction, int debounce) {
+  static const char * inDirections[] = { 
+    "in",   //0
+    "ipd",  //1
+    "ipu",  //2
+    "inw",  //3
+    "ipuw", //4
+    "ipdw"  //5
+  };
+
   //String command = "gdi ";
   if (direction > 5) {
     return;
@@ -261,6 +266,23 @@ void BGX13::gpioSetIn(int number, BGX_input_direction direction, int debounce) {
     "drvwk" //1
 */
 void BGX13::gpioSetOut(int number, BGX_output_direction direction, int mode, bool enablePullResistor, int driveStrength){
+  static const char * outDirections[] = {
+    "olo", //0
+    "ohi", //1
+    "hiz"  //2
+  };
+
+  // static const char * pushPullModes[] = {
+  //   "pp", //0
+  //   "od", //1
+  //   "os"  //2
+  // };
+
+  static const char * driveStrengths[] = {
+    "drvst", //0
+    "drvwk"  //1
+  };
+
   String command = "gdi ";
   if(direction > 2) return;
   if(mode > 2) return;
@@ -353,12 +375,12 @@ void BGX13::getVariable(char *variable, char *buffer, int length) {
   strncpy(buffer, _uart_rx_buffer, length);
 }
 
-void BGX13::selectGPIOFunction(int gpioNumber, char *function) {
+void BGX13::selectGPIOFunction(int gpioNumber, const char *function) {
   snprintf(_uart_tx_buffer, UART_BUFFER_SIZE, "gfu %d %s", gpioNumber, function);
   sendCommand();
 }
 
-void BGX13::setVariable(char *variable, char *name) {
+void BGX13::setVariable(const char *variable, const char *name) {
   snprintf(_uart_tx_buffer, UART_BUFFER_SIZE, "set %s %s", variable, name);
   sendCommand();
 }
